@@ -1,7 +1,7 @@
 ## Introduction
 The below example shows how to deploy WeNet offline and online ASR models on GPUs.
 
-This deployment (Triton Inference Server with TensorRT, FasterTransformer and CUDA decoders) runs on NVIDIA GPUs only. On AMD GPUs (ROCm), the ONNX models exported by `wenet/bin/export_onnx_gpu.py` run with onnxruntime's MIGraphX execution provider, which `export_onnx_gpu.py` and `wenet/bin/recognize_onnx_gpu.py` select on ROCm builds of PyTorch.
+This deployment (Triton Inference Server with TensorRT, FasterTransformer and CUDA decoders) runs on NVIDIA GPUs only. On AMD GPUs (ROCm), the ONNX models exported by `wenet/bin/export_onnx_gpu.py` run with onnxruntime's MIGraphX execution provider, which `export_onnx_gpu.py` and `wenet/bin/recognize_onnx_gpu.py` select on ROCm builds of PyTorch; the AMD GPU section of the top-level README lists the ROCm, torch and onnxruntime versions that work together.
 
 ## Instructions
 * Step 1. Convert your model/pretrained model to onnx models. For example:

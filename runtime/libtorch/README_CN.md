@@ -43,7 +43,7 @@ mkdir build && cd build && cmake -DGRPC=ON .. && cmake --build .
 mkdir build && cd build && cmake -DGPU=ON .. && cmake --build .
 ```
 
-如需使用本地已有的 LibTorch 代替自动下载的版本，可以传入 `Torch_DIR`。在 AMD GPU（ROCm，仅支持 Linux）上编译即采用这种方式：先安装 ROCm（若不在 `/opt/rocm`，请设置 `ROCM_PATH`），再将 `Torch_DIR` 指向 ROCm 版本的 LibTorch，例如 ROCm 版 PyTorch wheel 自带的 LibTorch：
+如需使用本地已有的 LibTorch 代替自动下载的版本，可以传入 `Torch_DIR`。在 AMD GPU（ROCm，仅支持 Linux）上编译即采用这种方式：先安装 ROCm 以及针对同一 ROCm 版本构建的 PyTorch wheel（例如 ROCm 7.2.4 与顶层 README 中 AMD GPU 部分的 `torch==2.8.0+rocm7.2.4` wheel；若 ROCm 不在 `/opt/rocm`，请设置 `ROCM_PATH`），再将 `Torch_DIR` 指向该 wheel 自带的 LibTorch：
 
 ``` sh
 mkdir build && cd build && cmake -DGPU=ON -DTorch_DIR=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)')/Torch .. && cmake --build .
