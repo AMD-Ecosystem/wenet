@@ -74,6 +74,15 @@ For building with GPU, you should turn on `GPU`:
 mkdir build && cd build && cmake -DGPU=ON .. && cmake --build .
 ```
 
+To use a LibTorch you already have instead of the downloaded one, pass
+`Torch_DIR`. This is how to build for an AMD GPU (ROCm, Linux only): install
+ROCm (set `ROCM_PATH` if it is not in `/opt/rocm`) and point `Torch_DIR` at a
+ROCm build of LibTorch, e.g. the one in the ROCm PyTorch wheel:
+
+``` sh
+mkdir build && cd build && cmake -DGPU=ON -DTorch_DIR=$(python -c 'import torch; print(torch.utils.cmake_prefix_path)')/Torch .. && cmake --build .
+```
+
 * Step 3. Testing, the RTF(real time factor) is shown in the console.
 
 ``` sh

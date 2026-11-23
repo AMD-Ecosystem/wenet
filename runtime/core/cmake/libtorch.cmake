@@ -52,12 +52,18 @@ if(TORCH)
 
     # iOS use LibTorch from pod install
     if(NOT IOS)
-      FetchContent_Declare(libtorch
-        URL      ${LIBTORCH_URL}
-        URL_HASH ${URL_HASH}
-      )
-      FetchContent_MakeAvailable(libtorch)
-      find_package(Torch REQUIRED PATHS ${libtorch_SOURCE_DIR} NO_DEFAULT_PATH)
+      if(Torch_DIR)
+        # Use the LibTorch given by -DTorch_DIR (e.g. the one in an installed
+        # PyTorch wheel, which is how a ROCm build gets its LibTorch).
+        find_package(Torch REQUIRED)
+      else()
+        FetchContent_Declare(libtorch
+          URL      ${LIBTORCH_URL}
+          URL_HASH ${URL_HASH}
+        )
+        FetchContent_MakeAvailable(libtorch)
+        find_package(Torch REQUIRED PATHS ${libtorch_SOURCE_DIR} NO_DEFAULT_PATH)
+      endif()
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} -DC10_USE_GLOG")
     endif()
 
