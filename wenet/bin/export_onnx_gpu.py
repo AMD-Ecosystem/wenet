@@ -38,6 +38,10 @@ except ImportError:
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.INFO)
 
+# ROCm builds of PyTorch run onnxruntime through its MIGraphX provider.
+GPU_PROVIDER = ("MIGraphXExecutionProvider"
+                if torch.version.hip else "CUDAExecutionProvider")
+
 
 class Encoder(torch.nn.Module):
 
@@ -810,7 +814,7 @@ def export_offline_encoder(model, configs, args, logger, encoder_onnx_path):
     with torch.no_grad():
         o0, o1, o2, o3, o4 = encoder(speech, speech_lens)
 
-    providers = ["CUDAExecutionProvider"]
+    providers = [GPU_PROVIDER]
     ort_session = onnxruntime.InferenceSession(encoder_onnx_path,
                                                providers=providers)
     ort_inputs = {
@@ -963,7 +967,7 @@ def export_online_encoder(model, configs, args, logger, encoder_onnx_path):
     if transformer:
         torch_outs = list(torch_outs).pop(6)
     ort_session = onnxruntime.InferenceSession(
-        encoder_onnx_path, providers=["CUDAExecutionProvider"])
+        encoder_onnx_path, providers=[GPU_PROVIDER])
     ort_inputs = {}
 
     input_tensors = to_numpy(input_tensors)
@@ -1086,7 +1090,7 @@ def export_rescoring_decoder(model, configs, args, logger, decoder_onnx_path,
             r_hyps_pad_sos_eos,
             ctc_score,
         )
-    providers = ["CUDAExecutionProvider"]
+    providers = [GPU_PROVIDER]
     ort_session = onnxruntime.InferenceSession(decoder_onnx_path,
                                                providers=providers)
 

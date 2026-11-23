@@ -148,7 +148,10 @@ def main():
     # Init asr model from configs
     use_cuda = args.gpu >= 0 and torch.cuda.is_available()
     if use_cuda:
-        EP_list = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+        # ROCm builds of PyTorch run onnxruntime through its MIGraphX provider.
+        gpu_provider = ('MIGraphXExecutionProvider'
+                        if torch.version.hip else 'CUDAExecutionProvider')
+        EP_list = [gpu_provider, 'CPUExecutionProvider']
     else:
         EP_list = ['CPUExecutionProvider']
 
