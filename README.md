@@ -118,6 +118,30 @@ pip install -e .[torch-npu]
 
 </details>
 
+<details><summary><b>For AMD GPU (ROCm) users:</b></summary>
+
+- Install the ROCm builds of torch and torchaudio (Linux). The wheels bring
+  the ROCm runtime with them, so only the AMD GPU driver is needed:
+
+``` sh
+pip install torch==2.8.0+rocm6.4 torchaudio==2.8.0+rocm6.4 --index-url https://download.pytorch.org/whl/rocm6.4
+```
+
+- torchaudio 2.8 is the last release that still has every torchaudio API
+  WeNet uses (`torchaudio.info`, `torchaudio.sox_effects`).
+- ROCm builds of PyTorch keep the `cuda` device name, so `--device cuda`,
+  `--gpu` and the `nccl` backend (RCCL on ROCm) work unchanged.
+- torchaudio's ROCm builds have no GPU kernel for `rnnt_loss`; train
+  transducer models with `enable_k2: true` in `model_conf` and a ROCm build of
+  [k2](https://k2-fsa.github.io/k2/installation/from_source.html).
+- `wenet/bin/export_onnx_gpu.py` and `wenet/bin/recognize_onnx_gpu.py` use
+  onnxruntime's MIGraphX execution provider on ROCm
+  (`pip install onnxruntime-migraphx`, with MIGraphX from ROCm).
+- The Triton Inference Server deployment in `runtime/gpu` (TensorRT,
+  FasterTransformer, CUDA decoders) runs on NVIDIA GPUs only.
+
+</details>
+
 - Install other python packages
 
 ``` sh

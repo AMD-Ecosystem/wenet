@@ -53,6 +53,9 @@ Measured on a Tesla T4 (16GB, Turing/sm_75), torch 2.4.0+cu121.
   runs on CPU unless you pass `--device cuda`. There is no warning when this
   happens. Measured on paraformer: CUDA is **2.84x** faster than CPU
   (0.205s vs 0.581s per utterance, cached model, T4).
+* **AMD GPUs use the same `cuda` device.** ROCm builds of PyTorch keep the
+  `cuda` device name, so `--device cuda` (CLI) and `device='cuda'`
+  (`wenet.load_model`) run on an AMD GPU unchanged.
 * **No dtype flag on the pip-installed CLI.** The `wenet` console command
   (`wenet/cli/transcribe.py`) always runs fp32 and has no `--dtype`/`--fp16`
   flag. The training-recipe script `wenet/bin/recognize.py` does expose
