@@ -43,7 +43,7 @@ mkdir build && cd build && cmake -DGRPC=ON .. && cmake --build .
 mkdir build && cd build && cmake -DGPU=ON .. && cmake --build .
 ```
 
-如需使用本地已有的 LibTorch 代替自动下载的版本，可以将 `LIBTORCH_PATH` 设为该 LibTorch 的目录（即包含 `share/cmake/Torch` 的目录）。若该目录中没有 LibTorch，配置会报错停止；传入 `-DLIBTORCH_PATH=` 即可恢复自动下载。在 AMD GPU（ROCm，仅支持 Linux）上编译即采用这种方式：先安装 ROCm 以及针对同一 ROCm 版本构建的 PyTorch wheel（例如 ROCm 7.2.4 与顶层 README 中 AMD GPU 部分的 `torch==2.8.0+rocm7.2.4.lw.gitd618db82` wheel；若 ROCm 不在 `/opt/rocm`，请设置 `ROCM_PATH`），再将 `LIBTORCH_PATH` 指向该 wheel 的 `torch` 目录：
+如需使用本地已有的 LibTorch 代替自动下载的版本，可以将 `LIBTORCH_PATH` 设为该 LibTorch 的目录（即包含 `share/cmake/Torch` 的目录）。若该目录中没有可用的 LibTorch，配置会报错停止；传入 `-DLIBTORCH_PATH=` 即可恢复自动下载。在 AMD GPU（ROCm，仅支持 Linux）上编译即采用这种方式：先安装 ROCm 以及针对同一 ROCm 版本构建的 PyTorch wheel（例如 ROCm 7.2.4 与顶层 README 中 AMD GPU 部分的 `torch==2.8.0+rocm7.2.4.lw.gitd618db82` wheel；若 ROCm 不在 `/opt/rocm`，请设置环境变量 `ROCM_PATH`），再将 `LIBTORCH_PATH` 指向该 wheel 的 `torch` 目录：
 
 ``` sh
 mkdir build && cd build && cmake -DGPU=ON -DLIBTORCH_PATH=$(python -c 'import os, torch; print(os.path.dirname(torch.__file__))') .. && cmake --build .

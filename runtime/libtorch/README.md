@@ -76,12 +76,13 @@ mkdir build && cd build && cmake -DGPU=ON .. && cmake --build .
 
 To use a LibTorch you already have instead of downloading one, set
 `LIBTORCH_PATH` to its directory (the one that holds `share/cmake/Torch`).
-Configuring stops with an error if that directory has no LibTorch; set
+Configuring stops with an error if that directory has no usable LibTorch; set
 `-DLIBTORCH_PATH=` to go back to the download. This is how to build for an AMD
 GPU (ROCm, Linux only): install ROCm and a PyTorch wheel built for that same
 ROCm (e.g. ROCm 7.2.4 and the `torch==2.8.0+rocm7.2.4.lw.gitd618db82` wheel
-from the AMD GPU section of the top-level README), set `ROCM_PATH` if ROCm is
-not in `/opt/rocm`, and point `LIBTORCH_PATH` at the wheel's `torch` directory:
+from the AMD GPU section of the top-level README), export the `ROCM_PATH`
+environment variable if ROCm is not in `/opt/rocm`, and point `LIBTORCH_PATH`
+at the wheel's `torch` directory:
 
 ``` sh
 mkdir build && cd build && cmake -DGPU=ON -DLIBTORCH_PATH=$(python -c 'import os, torch; print(os.path.dirname(torch.__file__))') .. && cmake --build .

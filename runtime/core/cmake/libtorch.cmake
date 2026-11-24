@@ -58,18 +58,19 @@ if(TORCH)
       # them before loading this one, so it replaces any earlier LibTorch, and
       # after, so that unsetting LIBTORCH_PATH goes back to the download.
       set(_torch_cache_vars Torch_DIR Caffe2_DIR TORCH_LIBRARY c10_LIBRARY
-        C10_CUDA_LIBRARY kineto_LIBRARY)
+        C10_CUDA_LIBRARY CAFFE2_NVRTC_LIBRARY kineto_LIBRARY)
       foreach(_var ${_torch_cache_vars})
         unset(${_var} CACHE)
       endforeach()
-      find_package(Torch QUIET PATHS ${LIBTORCH_PATH} NO_DEFAULT_PATH)
+      find_package(Torch PATHS ${LIBTORCH_PATH} NO_DEFAULT_PATH)
       foreach(_var ${_torch_cache_vars})
         unset(${_var} CACHE)
       endforeach()
       if(NOT Torch_FOUND)
         message(FATAL_ERROR "LIBTORCH_PATH is '${LIBTORCH_PATH}', which has no "
-          "LibTorch (share/cmake/Torch/TorchConfig.cmake). Set it to a LibTorch "
-          "directory, or unset it to download LibTorch.")
+          "usable LibTorch (share/cmake/Torch/TorchConfig.cmake; see the "
+          "messages above). Set it to a LibTorch directory, or unset it to "
+          "download LibTorch.")
       endif()
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} -DC10_USE_GLOG")
     elseif(NOT IOS)
