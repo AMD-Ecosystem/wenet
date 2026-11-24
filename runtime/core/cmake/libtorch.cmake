@@ -53,9 +53,18 @@ if(TORCH)
     # iOS use LibTorch from pod install
     if(NOT IOS)
       # find_package caches Torch_DIR pointing into the downloaded LibTorch;
-      # only a Torch_DIR elsewhere was given by the user.
-      set(LIBTORCH_DOWNLOAD_TORCH_DIR "${FETCHCONTENT_BASE_DIR}/libtorch-src/share/cmake/Torch")
-      if(Torch_DIR AND NOT Torch_DIR STREQUAL LIBTORCH_DOWNLOAD_TORCH_DIR)
+      # only an existing Torch_DIR elsewhere was given by the user. Compare
+      # resolved paths: the source directory may be reached through a symlink.
+      set(LIBTORCH_USER_TORCH_DIR OFF)
+      if(Torch_DIR AND EXISTS "${Torch_DIR}/TorchConfig.cmake")
+        get_filename_component(_torch_dir "${Torch_DIR}" REALPATH)
+        get_filename_component(_download_torch_dir
+          "${FETCHCONTENT_BASE_DIR}/libtorch-src/share/cmake/Torch" REALPATH)
+        if(NOT _torch_dir STREQUAL _download_torch_dir)
+          set(LIBTORCH_USER_TORCH_DIR ON)
+        endif()
+      endif()
+      if(LIBTORCH_USER_TORCH_DIR)
         # Use the LibTorch given by -DTorch_DIR (e.g. the one in an installed
         # PyTorch wheel, which is how a ROCm build gets its LibTorch).
         find_package(Torch REQUIRED)
