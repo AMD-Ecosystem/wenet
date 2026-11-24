@@ -50,32 +50,35 @@ if(TORCH)
       message(FATAL_ERROR "Unsupported System '${CMAKE_SYSTEM_NAME}' (expected 'Windows', 'Linux', 'Darwin' or 'iOS')")
     endif()
 
+    set(LIBTORCH_PATH "" CACHE PATH "local LibTorch to use instead of downloading one")
+
     # iOS use LibTorch from pod install
-    if(NOT IOS)
-      # find_package caches Torch_DIR pointing into the downloaded LibTorch;
-      # only an existing Torch_DIR elsewhere was given by the user. Compare
-      # resolved paths: the source directory may be reached through a symlink.
-      set(LIBTORCH_USER_TORCH_DIR OFF)
-      if(Torch_DIR AND EXISTS "${Torch_DIR}/TorchConfig.cmake")
-        get_filename_component(_torch_dir "${Torch_DIR}" REALPATH)
-        get_filename_component(_download_torch_dir
-          "${FETCHCONTENT_BASE_DIR}/libtorch-src/share/cmake/Torch" REALPATH)
-        if(NOT _torch_dir STREQUAL _download_torch_dir)
-          set(LIBTORCH_USER_TORCH_DIR ON)
-        endif()
+    if(NOT IOS AND LIBTORCH_PATH)
+      # TorchConfig.cmake caches these paths into the LibTorch it loads. Drop
+      # them before loading this one, so it replaces any earlier LibTorch, and
+      # after, so that unsetting LIBTORCH_PATH goes back to the download.
+      set(_torch_cache_vars Torch_DIR Caffe2_DIR TORCH_LIBRARY c10_LIBRARY
+        C10_CUDA_LIBRARY kineto_LIBRARY)
+      foreach(_var ${_torch_cache_vars})
+        unset(${_var} CACHE)
+      endforeach()
+      find_package(Torch QUIET PATHS ${LIBTORCH_PATH} NO_DEFAULT_PATH)
+      foreach(_var ${_torch_cache_vars})
+        unset(${_var} CACHE)
+      endforeach()
+      if(NOT Torch_FOUND)
+        message(FATAL_ERROR "LIBTORCH_PATH is '${LIBTORCH_PATH}', which has no "
+          "LibTorch (share/cmake/Torch/TorchConfig.cmake). Set it to a LibTorch "
+          "directory, or unset it to download LibTorch.")
       endif()
-      if(LIBTORCH_USER_TORCH_DIR)
-        # Use the LibTorch given by -DTorch_DIR (e.g. the one in an installed
-        # PyTorch wheel, which is how a ROCm build gets its LibTorch).
-        find_package(Torch REQUIRED)
-      else()
-        FetchContent_Declare(libtorch
-          URL      ${LIBTORCH_URL}
-          URL_HASH ${URL_HASH}
-        )
-        FetchContent_MakeAvailable(libtorch)
-        find_package(Torch REQUIRED PATHS ${libtorch_SOURCE_DIR} NO_DEFAULT_PATH)
-      endif()
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} -DC10_USE_GLOG")
+    elseif(NOT IOS)
+      FetchContent_Declare(libtorch
+        URL      ${LIBTORCH_URL}
+        URL_HASH ${URL_HASH}
+      )
+      FetchContent_MakeAvailable(libtorch)
+      find_package(Torch REQUIRED PATHS ${libtorch_SOURCE_DIR} NO_DEFAULT_PATH)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS} -DC10_USE_GLOG")
     endif()
 
