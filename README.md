@@ -130,11 +130,14 @@ pip install torch==2.8.0+rocm6.4 torchaudio==2.8.0+rocm6.4 --index-url https://d
 - Install the other python packages with these commands instead of
   `pip install -r requirements.txt` below. `openai-whisper==20231117` asks for
   the CUDA `triton` package on Linux, which pip would install over ROCm's
-  Triton, so it is installed without its dependencies:
+  Triton, so it is installed without its dependencies. It is built from
+  source by a `setup.py` that imports `pkg_resources`, which setuptools 82
+  removed, so an older setuptools is installed first:
 
 ``` sh
 grep -v openai-whisper requirements.txt > /tmp/requirements-rocm.txt
 pip install -r /tmp/requirements-rocm.txt
+pip install "setuptools<82"
 pip install --no-deps --no-build-isolation openai-whisper==20231117
 pip install more-itertools numba tiktoken
 ```
@@ -152,7 +155,8 @@ pip install more-itertools numba tiktoken
   (next to the rocm6.4 wheels above it falls back to the CPU), so for these
   scripts [install ROCm 7.2.4](https://rocm.docs.amd.com/projects/install-on-linux/en/docs-7.2.4/)
   (its `rocm` package includes MIGraphX) and use the torch and torchaudio
-  wheels built for it:
+  wheels built for it. `onnxruntime-migraphx` 1.27.1 needs Python 3.11 or
+  newer, so create the conda env with `python=3.11` for these scripts:
 
 ``` sh
 pip install torch==2.8.0+rocm7.2.4.lw.gitd618db82 torchaudio==2.8.0+rocm7.2.4.git6e1c7fe9 -f https://repo.radeon.com/rocm/manylinux/rocm-rel-7.2.4/
