@@ -52,20 +52,31 @@ if(TORCH)
 
     set(LIBTORCH_PATH "" CACHE PATH "local LibTorch to use instead of downloading one")
 
-    # iOS use LibTorch from pod install
-    if(NOT IOS AND LIBTORCH_PATH)
-      # TorchConfig.cmake caches these paths into the LibTorch it loads. Drop
-      # them before loading this one, so it replaces any earlier LibTorch, and
-      # after, so that unsetting LIBTORCH_PATH goes back to the download.
-      set(_torch_cache_vars Torch_DIR Caffe2_DIR TORCH_LIBRARY c10_LIBRARY
-        C10_CUDA_LIBRARY CAFFE2_NVRTC_LIBRARY kineto_LIBRARY)
+    # TorchConfig.cmake caches these paths into the LibTorch it loads. Drop
+    # them before loading the LIBTORCH_PATH one, so it replaces any earlier
+    # LibTorch, and after, so that unsetting LIBTORCH_PATH goes back to the
+    # download. _LIBTORCH_PATH_LOADING stays cached when that LibTorch's config
+    # stops configure with an error, so the next configure can still drop them.
+    set(_torch_cache_vars Torch_DIR Caffe2_DIR TORCH_LIBRARY c10_LIBRARY
+      C10_CUDA_LIBRARY CAFFE2_NVRTC_LIBRARY kineto_LIBRARY)
+    if(NOT LIBTORCH_PATH AND _LIBTORCH_PATH_LOADING)
       foreach(_var ${_torch_cache_vars})
         unset(${_var} CACHE)
       endforeach()
+      unset(_LIBTORCH_PATH_LOADING CACHE)
+    endif()
+
+    # iOS use LibTorch from pod install
+    if(NOT IOS AND LIBTORCH_PATH)
+      foreach(_var ${_torch_cache_vars})
+        unset(${_var} CACHE)
+      endforeach()
+      set(_LIBTORCH_PATH_LOADING ON CACHE INTERNAL "")
       find_package(Torch PATHS ${LIBTORCH_PATH} NO_DEFAULT_PATH)
       foreach(_var ${_torch_cache_vars})
         unset(${_var} CACHE)
       endforeach()
+      unset(_LIBTORCH_PATH_LOADING CACHE)
       if(NOT Torch_FOUND)
         message(FATAL_ERROR "LIBTORCH_PATH is '${LIBTORCH_PATH}', which has no "
           "usable LibTorch (share/cmake/Torch/TorchConfig.cmake; see the "
