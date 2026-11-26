@@ -20,22 +20,11 @@ import os
 from contextlib import nullcontext
 from typing import List, Optional
 
-import deepspeed
 import torch
 import torch.distributed as dist
 import torch.optim as optim
 import yaml
-from deepspeed.runtime.zero.stage3 import \
-    estimate_zero3_model_states_mem_needs_all_live
-from deepspeed.runtime.zero.stage_1_and_2 import \
-    estimate_zero2_model_states_mem_needs_all_live
-from deepspeed.utils.zero_to_fp32 import \
-    convert_zero_checkpoint_to_fp32_state_dict
 from tensorboardX import SummaryWriter
-from torch.distributed.fsdp import CPUOffload
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed.fsdp import (MixedPrecision, ShardingStrategy,
-                                    sharded_grad_scaler)
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader
 
@@ -44,9 +33,6 @@ from wenet.utils.common import (TORCH_NPU_AVAILABLE, StepTimer,
                                 get_nested_attribute, lrs_to_str,
                                 tensor_to_scalar)
 from wenet.utils.ctc_utils import get_blank_id
-from wenet.utils.fsdp_utils import (apply_fsdp_checkpointing,
-                                    check_gradient_checkpoint, fsdp_save_model,
-                                    wenet_fsdp_wrap_policy)
 from wenet.utils.init_dataset import init_dataset
 from wenet.utils.scheduler import NoamHoldAnnealing, WarmupLR
 
@@ -209,6 +195,14 @@ def add_deepspeed_args(parser):
                         default='model_only',
                         choices=['model_only', 'model+optimizer'],
                         help='save model/optimizer states')
+    try:
+        import deepspeed
+    except ImportError:
+        # Accept the same options without DeepSpeed (e.g. on Windows), so
+        # one command line works for every train engine.
+        parser.add_argument('--deepspeed', default=False, action='store_true')
+        parser.add_argument('--deepspeed_config', default=None, type=str)
+        return parser
     # DeepSpeed automaticly add '--deepspeed' and '--deepspeed_config' to parser
     parser = deepspeed.add_config_arguments(parser)
     return parser
@@ -264,6 +258,7 @@ def init_distributed(args):
             logging.error("not supported device: {}".format(args.device))
         dist.init_process_group(args.dist_backend)
     elif args.train_engine == "deepspeed":
+        import deepspeed
         deepspeed.init_distributed(dist_backend=args.dist_backend)
     else:
         logging.error("not supported engine: {}".format(args.train_engine))
@@ -422,6 +417,10 @@ def wrap_cuda_model(args, model, configs=None):
     elif args.train_engine == "deepspeed":  # deepspeed
         # NOTE(xcsong): look in detail how the memory estimator API works:
         #   https://deepspeed.readthedocs.io/en/latest/memory.html#discussion
+        from deepspeed.runtime.zero.stage3 import \
+            estimate_zero3_model_states_mem_needs_all_live
+        from deepspeed.runtime.zero.stage_1_and_2 import \
+            estimate_zero2_model_states_mem_needs_all_live
         if int(os.environ.get('RANK', 0)) == 0:
             logging.info("Estimating model states memory needs (zero2)...")
             estimate_zero2_model_states_mem_needs_all_live(
@@ -436,6 +435,13 @@ def wrap_cuda_model(args, model, configs=None):
         device = torch.device(args.device)  # Init device later
         pass  # Init DeepSpeed later
     elif args.train_engine == 'torch_fsdp':
+        from torch.distributed.fsdp import CPUOffload
+        from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+        from torch.distributed.fsdp import MixedPrecision, ShardingStrategy
+
+        from wenet.utils.fsdp_utils import (apply_fsdp_checkpointing,
+                                            check_gradient_checkpoint,
+                                            wenet_fsdp_wrap_policy)
         assert configs is not None
         mixed_precision_dtype = {
             'fp32': torch.float32,
@@ -553,6 +559,7 @@ def init_optimizer_and_scheduler(args, configs, model):
                 def scheduler(opt):
                     return scheduler_type(opt, **configs['scheduler_conf'])
 
+        import deepspeed
         model, optimizer, _, scheduler = deepspeed.initialize(
             args=args,
             model=model,
@@ -601,6 +608,7 @@ def init_scaler(args):
         # why bf16 don't need scaler:
         # https://discuss.pytorch.org/t/why-bf16-do-not-need-loss-scaling/176596
         if args.dtype in ['fp16']:
+            from torch.distributed.fsdp import sharded_grad_scaler
             scaler = sharded_grad_scaler.ShardedGradScaler(enabled=True)
     return scaler
 
@@ -615,6 +623,8 @@ def save_model(model, info_dict):
         # NOTE(xcsong): All ranks should call this API, but only rank 0
         #   save the general model params. see:
         #   https://github.com/microsoft/DeepSpeed/issues/2993
+        from deepspeed.utils.zero_to_fp32 import \
+            convert_zero_checkpoint_to_fp32_state_dict
         with torch.no_grad():
             model.save_checkpoint(save_dir=model_dir,
                                   tag=tag,
@@ -626,6 +636,7 @@ def save_model(model, info_dict):
                 os.system("rm -rf {}/{}".format(model_dir, tag))
 
     elif info_dict['train_engine'] == "torch_fsdp":
+        from wenet.utils.fsdp_utils import fsdp_save_model
         fsdp_save_model(model, save_model_path, info_dict)
     elif rank == 0:
         # NOTE(xcsong): For torch_ddp, only rank-0 should call this.
