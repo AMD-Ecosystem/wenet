@@ -142,8 +142,6 @@ pip install --no-deps --no-build-isolation openai-whisper==20231117
 pip install more-itertools numba tiktoken
 ```
 
-- torchaudio 2.8 is the last release that still has every torchaudio API
-  WeNet uses (`torchaudio.info`, `torchaudio.sox_effects`).
 - ROCm builds of PyTorch keep the `cuda` device name, so `--device cuda`,
   `--gpu` and the `nccl` backend (RCCL on ROCm) work unchanged.
 - torchaudio's ROCm builds have no GPU kernel for `rnnt_loss`; train
