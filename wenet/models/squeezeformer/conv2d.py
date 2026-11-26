@@ -13,8 +13,13 @@
 # limitations under the License.
 """Conv2d Module with Valid Padding"""
 
+from typing import Optional, Union
+
 import torch.nn.functional as F
-from torch.nn.modules.conv import _ConvNd, _size_2_t, Union, _pair, Tensor, Optional
+from torch import Tensor
+from torch.nn.common_types import _size_2_t
+from torch.nn.modules.conv import _ConvNd
+from torch.nn.modules.utils import _pair
 
 
 class Conv2dValid(_ConvNd):
