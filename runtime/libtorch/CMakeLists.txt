@@ -29,6 +29,8 @@ if(NOT MSVC)
   # Keep the same with openfst, -fPIC or -fpic
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -fPIC")
 else()
+  # LibTorch 2.x headers need C++17, which MSVC does not default to
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
   add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endif()
