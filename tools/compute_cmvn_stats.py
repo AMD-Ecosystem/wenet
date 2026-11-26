@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import sys
 import argparse
-import json
 import codecs
-import yaml
+import json
+import sys
 
 import torch
 import torchaudio
 import torchaudio.compliance.kaldi as kaldi
-from torch.utils.data import Dataset, DataLoader
+import yaml
+from torch.utils.data import DataLoader, Dataset
+
+from wenet.utils.audio_utils import audio_sample_rate, load_audio
 
 
 class CollateFunc(object):
@@ -29,19 +31,19 @@ class CollateFunc(object):
             value = item[1].strip().split(",")
             assert len(value) == 3 or len(value) == 1
             wav_path = value[0]
-            sample_rate = torchaudio.info(wav_path).sample_rate
+            sample_rate = audio_sample_rate(wav_path)
             resample_rate = sample_rate
             # len(value) == 3 means segmented wav.scp,
             # len(value) == 1 means original wav.scp
             if len(value) == 3:
                 start_frame = int(float(value[1]) * sample_rate)
                 end_frame = int(float(value[2]) * sample_rate)
-                waveform, sample_rate = torchaudio.load(
-                    filepath=wav_path,
+                waveform, sample_rate = load_audio(
+                    wav_path,
                     num_frames=end_frame - start_frame,
                     frame_offset=start_frame)
             else:
-                waveform, sample_rate = torchaudio.load(item[1])
+                waveform, sample_rate = load_audio(wav_path)
 
             waveform = waveform * (1 << 15)
             if self.resample_rate != 0 and self.resample_rate != sample_rate:

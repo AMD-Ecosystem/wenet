@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 import torch
 import torch.nn.functional as F
-import torchaudio
 import whisper
 import yaml
 from whisper.audio import HOP_LENGTH, N_FFT, N_FRAMES, N_SAMPLES, pad_or_trim
@@ -18,6 +17,7 @@ from wenet.models.transformer.embedding import WhisperPositionalEncoding
 from wenet.models.whisper.convert_whisper_to_wenet_config_and_ckpt import (
     convert_to_wenet_state_dict, convert_to_wenet_units, convert_to_wenet_yaml)
 from wenet.text.whisper_tokenizer import WhisperTokenizer
+from wenet.utils.audio_utils import load_audio
 from wenet.utils.common import add_whisper_tokens
 from wenet.utils.init_model import init_model
 from wenet.utils.mask import make_pad_mask, subsequent_mask
@@ -37,7 +37,7 @@ class DummyArguments:
     "test/resources/librispeech-1995-1837-0001.wav"
 ])
 def test_load_audio(audio_path):
-    waveform_wenet, sample_rate = torchaudio.load(audio_path)
+    waveform_wenet, sample_rate = load_audio(audio_path)
     waveform_wenet = waveform_wenet.numpy().flatten().astype(np.float32)
     wavform_whisper = whisper.load_audio(audio_path)
     np.testing.assert_allclose(waveform_wenet,
@@ -51,7 +51,7 @@ def test_load_audio(audio_path):
     "test/resources/librispeech-1995-1837-0001.wav"
 ])
 def test_log_mel_spectrogram(audio_path):
-    waveform_wenet, sample_rate = torchaudio.load(audio_path)
+    waveform_wenet, sample_rate = load_audio(audio_path)
     sample = {
         "wav": waveform_wenet,
         "sample_rate": sample_rate,
@@ -284,7 +284,7 @@ def test_model(model, audio_path):
                                    atol=1e-10)
 
         # 5. Forward wenet.encoder
-        waveform, sample_rate = torchaudio.load(audio_path)
+        waveform, sample_rate = load_audio(audio_path)
         sample = {
             "wav": waveform,
             "sample_rate": sample_rate,

@@ -1,5 +1,3 @@
-import platform
-
 from setuptools import find_packages, setup
 
 requirements = [
@@ -10,6 +8,8 @@ requirements = [
     "torchaudio>=0.13.0",
     "openai-whisper",
     "librosa",
+    "soundfile",
+    "soxr",
     "pyyaml",
     "jieba",
     "sentencepiece",
@@ -22,9 +22,6 @@ extra_require = {
         "numpy<2.0.0", "attrs", "psutil"
     ],
 }
-
-if platform.system() == 'Windows':
-    requirements += ['PySoundFile']
 
 setup(
     name="wenet",

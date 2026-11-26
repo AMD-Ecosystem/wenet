@@ -15,10 +15,10 @@
 import argparse
 import logging
 
-import torchaudio
 import torchaudio.compliance.kaldi as kaldi
 
 import wenet.dataset.kaldi_io as kaldi_io
+from wenet.utils.audio_utils import audio_sample_rate, load_audio
 
 
 def parse_opts():
@@ -100,14 +100,14 @@ if __name__ == '__main__':
         for item in audio_list:
             if len(item) == 2:
                 key, wav_path = item
-                waveform, sample_rate = torchaudio.load(wav_path)
+                waveform, sample_rate = load_audio(wav_path)
             else:
                 assert len(item) == 4
                 key, wav_path, start, end = item
-                sample_rate = torchaudio.info(wav_path).sample_rate
+                sample_rate = audio_sample_rate(wav_path)
                 frame_offset = int(start * sample_rate)
                 num_frames = int((end - start) * sample_rate)
-                waveform, sample_rate = torchaudio.load(
+                waveform, sample_rate = load_audio(
                     wav_path, frame_offset, num_frames)
 
             mat = kaldi.fbank(waveform,

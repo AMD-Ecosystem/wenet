@@ -14,17 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import torch
-import tarfile
 import argparse
-import torchaudio
-import soundfile
 import logging
-from tqdm import tqdm
+import os
+import tarfile
+from subprocess import PIPE, Popen
 from urllib.parse import urlparse
-from subprocess import Popen, PIPE
-from torch.utils.data import IterableDataset, DataLoader
+
+import soundfile
+import torch
+from torch.utils.data import DataLoader, IterableDataset
+from tqdm import tqdm
+
+from wenet.utils.audio_utils import load_audio, save_audio
 
 AUDIO_FORMAT_SETS = set(["flac", "mp3", "m4a", "ogg", "opus", "wav", "wma"])
 
@@ -96,7 +98,7 @@ class AudioIterableDataset(IterableDataset):
                             info = soundfile.info(file_obj)
                             example["duration"] = info.duration
                         elif postfix in AUDIO_FORMAT_SETS and self.flag == "audio":
-                            waveform, sample_rate = torchaudio.load(file_obj)
+                            waveform, sample_rate = load_audio(file_obj)
                             example["wav"] = waveform
                             example["sample_rate"] = sample_rate
                         elif self.flag == "content":
@@ -177,7 +179,7 @@ def main():
                     wav = result["wav"]
                     duration = wav.shape[-1] / sample_rate
                     total_duration += duration
-                    torchaudio.save(f"{args.out_file}/{key}.wav", wav, sample_rate)
+                    save_audio(f"{args.out_file}/{key}.wav", wav, sample_rate)
                 elif args.flag == "content":
                     for postfix, content in result.items():
                         if postfix != "key":

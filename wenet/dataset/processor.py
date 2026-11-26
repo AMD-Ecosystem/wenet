@@ -21,6 +21,7 @@ from subprocess import PIPE, Popen
 from urllib.parse import urlparse
 
 import librosa
+import soxr
 import torch
 import torch.nn.functional as F
 import torchaudio
@@ -29,6 +30,7 @@ from langid.langid import LanguageIdentifier, model
 from torch.nn.utils.rnn import pad_sequence
 
 from wenet.text.base_tokenizer import BaseTokenizer
+from wenet.utils.audio_utils import audio_sample_rate, load_audio
 
 AUDIO_FORMAT_SETS = set(['flac', 'mp3', 'm4a', 'ogg', 'opus', 'wav', 'wma'])
 
@@ -141,19 +143,19 @@ def decode_wav(sample):
     """
     assert 'key' in sample
     assert 'wav' in sample
-    wav_file = sample['wav']  # str/io.BytesIO, directly load in torchaudio
+    wav_file = sample['wav']  # str/io.BytesIO, directly load in load_audio
     if isinstance(wav_file, bytes):
         wav_file = io.BytesIO(wav_file)
     if 'start' in sample:
         assert 'end' in sample
-        sample_rate = torchaudio.info(wav_file).sample_rate
+        sample_rate = audio_sample_rate(wav_file)
         start_frame = int(sample['start'] * sample_rate)
         end_frame = int(sample['end'] * sample_rate)
-        waveform, _ = torchaudio.load(wav_file,
-                                      num_frames=end_frame - start_frame,
-                                      frame_offset=start_frame)
+        waveform, _ = load_audio(wav_file,
+                                 num_frames=end_frame - start_frame,
+                                 frame_offset=start_frame)
     else:
-        waveform, sample_rate = torchaudio.load(wav_file)
+        waveform, sample_rate = load_audio(wav_file)
     # del wav_file
     del sample['wav']
     sample['wav'] = waveform  # overwrite wav
@@ -223,10 +225,14 @@ def speed_perturb(sample, speeds=None):
     waveform = sample['wav']
     speed = random.choice(speeds)
     if speed != 1.0:
-        wav, _ = torchaudio.sox_effects.apply_effects_tensor(
-            waveform, sample_rate,
-            [['speed', str(speed)], ['rate', str(sample_rate)]])
-        sample['wav'] = wav
+        # Same as sox "speed <speed> rate <sample_rate>": treat the audio
+        # as sampled at sample_rate * speed and resample it to sample_rate
+        # with soxr, the resampler of sox's rate effect.
+        wav = soxr.resample(waveform.numpy().T,
+                            sample_rate * speed,
+                            sample_rate,
+                            quality='HQ')
+        sample['wav'] = torch.from_numpy(wav.T.copy())
 
     return sample
 

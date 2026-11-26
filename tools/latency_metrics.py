@@ -24,6 +24,7 @@ import torchaudio
 import torchaudio.compliance.kaldi as kaldi
 import yaml
 
+from wenet.utils.audio_utils import load_audio
 from wenet.utils.checkpoint import load_checkpoint
 from wenet.utils.common import replace_duplicates_with_blank
 from wenet.utils.file_utils import read_symbol_table
@@ -112,7 +113,7 @@ def main():
         if idx % 100 == 0:
             logging.info("processed {}.".format(idx))
         key, wav = wav.strip().split(' ', 1)
-        waveform, sr = torchaudio.load(wav)
+        waveform, sr = load_audio(wav)
         resample_rate = conf['dataset_conf']['resample_conf']['resample_rate']
         waveform = torchaudio.transforms.Resample(
             orig_freq=sr, new_freq=resample_rate)(waveform)
