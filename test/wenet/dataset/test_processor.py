@@ -1,11 +1,14 @@
 from functools import partial
+
 import pytest
+import soundfile
 import torch
-from torch.utils.data import datapipes
 import torchaudio
+from torch.utils.data import datapipes
 
 from wenet.dataset import processor
 from wenet.dataset.datapipes import SortDataPipe  # noqa
+from wenet.utils.audio_utils import load_audio
 from wenet.utils.init_tokenizer import init_tokenizer
 
 
@@ -192,8 +195,8 @@ def test_filter():
     "test/resources/librispeech-1995-1837-0001.wav",
 ])
 def test_compute_fbank(wav_file):
-    waveform, sample_rate = torchaudio.load(wav_file, normalize=False)
-    waveform = waveform.to(torch.float)
+    waveform, sample_rate = soundfile.read(wav_file, dtype='int16')
+    waveform = torch.from_numpy(waveform).to(torch.float).unsqueeze(0)
     assert sample_rate == 16000
     fbank_args = {
         "num_mel_bins": 80,
@@ -208,12 +211,24 @@ def test_compute_fbank(wav_file):
     fbank_args.pop("energy_floor")
     fbank_args.pop("sample_frequency")
     input = {
-        'wav': torchaudio.load(wav_file)[0],
+        'wav': load_audio(wav_file)[0],
         'sample_rate': 16000,
         'key': wav_file,
     }
     assert torch.allclose(
         processor.compute_fbank(input, **fbank_args)['feat'], mat)
+
+
+
+@pytest.mark.parametrize("speed", [0.9, 1.1])
+def test_speed_perturb(speed):
+    waveform, sample_rate = load_audio(
+        "test/resources/aishell-BAC009S0724W0121.wav")
+    sample = {'wav': waveform, 'sample_rate': sample_rate}
+    sample = processor.speed_perturb(sample, speeds=[speed])
+    assert sample['wav'].dtype == torch.float32
+    assert sample['wav'].shape == (1, round(waveform.size(1) / speed))
+    assert sample['sample_rate'] == sample_rate
 
 
 def test_sort_by_feats():

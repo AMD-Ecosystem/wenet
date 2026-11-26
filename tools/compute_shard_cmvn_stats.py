@@ -14,19 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import json
-import yaml
-import tarfile
-import logging
 import argparse
+import json
+import logging
+import sys
+import tarfile
+from subprocess import PIPE, Popen
+from urllib.parse import urlparse
 
 import torch
 import torchaudio
 import torchaudio.compliance.kaldi as kaldi
-from torch.utils.data import IterableDataset, DataLoader
-from urllib.parse import urlparse
-from subprocess import Popen, PIPE
+import yaml
+from torch.utils.data import DataLoader, IterableDataset
+
+from wenet.utils.audio_utils import load_audio
 
 AUDIO_FORMAT_SETS = set(["flac", "mp3", "m4a", "ogg", "opus", "wav", "wma"])
 
@@ -136,7 +138,7 @@ class AudioIterableDataset(IterableDataset):
                 with stream.extractfile(tarinfo) as file_obj:
                     try:
                         if postfix in AUDIO_FORMAT_SETS:
-                            waveform, sample_rate = torchaudio.load(file_obj)
+                            waveform, sample_rate = load_audio(file_obj)
                             example["wav"] = waveform
                             example["sample_rate"] = sample_rate
                     except Exception as ex:

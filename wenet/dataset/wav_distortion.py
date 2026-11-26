@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import random
 import math
+import random
+import sys
 
-import torchaudio
 import torch
+
+from wenet.utils.audio_utils import load_audio, save_audio
 
 
 def db2amp(db):
@@ -315,10 +316,10 @@ def distort_wav_conf(x, distort_type, distort_conf, rate=0.1):
 
 def distort_wav_conf_and_save(distort_type, distort_conf, rate, wav_in,
                               wav_out):
-    x, sr = torchaudio.load(wav_in)
+    x, sr = load_audio(wav_in)
     x = x.detach().numpy()
     out = distort_wav_conf(x, distort_type, distort_conf, rate)
-    torchaudio.save(wav_out, torch.from_numpy(out), sr)
+    save_audio(wav_out, torch.from_numpy(out), sr)
 
 
 if __name__ == "__main__":

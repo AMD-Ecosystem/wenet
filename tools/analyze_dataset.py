@@ -24,20 +24,21 @@ Usage:
     --num_thread 32
 """
 
-import os
-import json
-import math
-import time
-import numpy
-import logging
-import librosa
-import tarfile
 import argparse
-import torchaudio
+import json
+import logging
+import math
 import multiprocessing
+import os
+import tarfile
+import time
 
-from wenet.utils.file_utils import read_lists
+import librosa
+import numpy
+
 from wenet.dataset.processor import AUDIO_FORMAT_SETS
+from wenet.utils.audio_utils import load_audio
+from wenet.utils.file_utils import read_lists
 
 
 def get_args():
@@ -111,7 +112,7 @@ def read_tar(file):
                             data['txt'] = file_obj.read().decode(
                                 'utf8').strip()
                         elif postfix in AUDIO_FORMAT_SETS:
-                            waveform, sample_rate = torchaudio.load(file_obj)
+                            waveform, sample_rate = load_audio(file_obj)
                             # single channel
                             data['wav'] = waveform.numpy()[0, :]
                             data['sample_rate'] = sample_rate

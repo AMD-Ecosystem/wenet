@@ -17,13 +17,15 @@
 import argparse
 import io
 import logging
+import multiprocessing
 import os
 import tarfile
 import time
-import multiprocessing
 
 import torch
 import torchaudio
+
+from wenet.utils.audio_utils import load_audio, save_audio
 
 AUDIO_FORMAT_SETS = set(['flac', 'mp3', 'm4a', 'ogg', 'opus', 'wav', 'wma'])
 
@@ -51,14 +53,14 @@ def write_tar_file(data_list,
             if no_segments:
                 # read & resample
                 ts = time.time()
-                audio, sample_rate = torchaudio.load(wav)
+                audio, sample_rate = load_audio(wav)
                 audio = torchaudio.transforms.Resample(sample_rate,
                                                        resample)(audio)
                 read_time += (time.time() - ts)
             else:
                 if wav != prev_wav:
                     ts = time.time()
-                    waveforms, sample_rate = torchaudio.load(wav)
+                    waveforms, sample_rate = load_audio(wav)
                     read_time += (time.time() - ts)
                     prev_wav = wav
                 start = int(start * sample_rate)
@@ -71,11 +73,7 @@ def write_tar_file(data_list,
             audio = audio.to(torch.int16)
             ts = time.time()
             with io.BytesIO() as f:
-                torchaudio.save(f,
-                                audio,
-                                resample,
-                                format="wav",
-                                bits_per_sample=16)
+                save_audio(f, audio, resample, format="wav")
                 suffix = "wav"
                 f.seek(0)
                 data = f.read()

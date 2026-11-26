@@ -3,7 +3,7 @@
 
 import sys
 
-import torchaudio
+from wenet.utils.audio_utils import load_audio
 
 scp = sys.argv[1]
 dur_scp = sys.argv[2]
@@ -16,7 +16,7 @@ with open(scp, 'r') as f, open(dur_scp, 'w') as fout:
         wav_id = items[0]
         fname = items[1]
         cnt += 1
-        waveform, rate = torchaudio.load(fname)
+        waveform, rate = load_audio(fname)
         frames = len(waveform[0])
         duration = frames / float(rate)
         total_duration += duration
